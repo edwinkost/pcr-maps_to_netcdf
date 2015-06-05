@@ -4,6 +4,7 @@
 # EHS (20 March 2013): This is the list of general functions.
 #                      The list is continuation from Rens's and Dominik's.
 
+import shutil
 import subprocess
 import datetime
 import random
@@ -12,38 +13,43 @@ import gc
 import re
 import math
 import sys
+import types
 
 import netCDF4 as nc
 import numpy as np
 import numpy.ma as ma
 import pcraster as pcr
 
+import logging
+logger = logging.getLogger(__name__)
+
 # Global variables:
 MV = 1e20
 smallNumber = 1E-39
 
+# file cache to minimize/reduce opening/closing files.  
 filecache = dict()
 
 def netcdf2PCRobjCloneWithoutTime(ncFile,varName,
                                   cloneMapFileName  = None,\
-                                  LatitudeLongitude = False,\
+                                  LatitudeLongitude = True,\
                                   specificFillValue = None):
+    
+    logger.debug('reading variable: '+str(varName)+' from the file: '+str(ncFile))
+    
     # 
     # EHS (19 APR 2013): To convert netCDF (tss) file to PCR file.
     # --- with clone checking
     #     Only works if cells are 'square'.
     #     Only works if cellsizeClone <= cellsizeInput
     # Get netCDF file and variable name:
-    
-    print ncFile
-    
     if ncFile in filecache.keys():
         f = filecache[ncFile]
-        print "Cached: ", ncFile
+        #~ print "Cached: ", ncFile
     else:
         f = nc.Dataset(ncFile)
         filecache[ncFile] = f
-        print "New: ", ncFile
+        #~ print "New: ", ncFile
     
     #print ncFile
     #f = nc.Dataset(ncFile)  
@@ -91,7 +97,9 @@ def netcdf2PCRobjCloneWithoutTime(ncFile,varName,
         yIdxSta = int(np.where(abs(f.variables['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
         yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(cellsizeInput/cellsizeClone)))
         cropData = f.variables[varName][yIdxSta:yIdxEnd,xIdxSta:xIdxEnd]
-        factor = int(float(cellsizeInput)/float(cellsizeClone))
+        factor = int(round(float(cellsizeInput)/float(cellsizeClone)))
+
+        if factor > 1: logger.debug('Resample: input cell size = '+str(float(cellsizeInput))+' ; output/clone cell size = '+str(float(cellsizeClone)))
     
     # convert to PCR object and close f
     if specificFillValue != None:
@@ -116,7 +124,7 @@ def netcdf2PCRobjCloneWithoutTime(ncFile,varName,
 def netcdf2PCRobjClone(ncFile,varName,dateInput,\
                        useDoy = None,
                        cloneMapFileName  = None,\
-                       LatitudeLongitude = False,\
+                       LatitudeLongitude = True,\
                        specificFillValue = None):
     # 
     # EHS (19 APR 2013): To convert netCDF (tss) file to PCR file.
@@ -125,15 +133,17 @@ def netcdf2PCRobjClone(ncFile,varName,dateInput,\
     #     Only works if cellsizeClone <= cellsizeInput
     # Get netCDF file and variable name:
     
-    print ncFile
+    #~ print ncFile
+    
+    logger.debug('reading variable: '+str(varName)+' from the file: '+str(ncFile))
     
     if ncFile in filecache.keys():
         f = filecache[ncFile]
-        print "Cached: ", ncFile
+        #~ print "Cached: ", ncFile
     else:
         f = nc.Dataset(ncFile)
         filecache[ncFile] = f
-        print "New: ", ncFile
+        #~ print "New: ", ncFile
     
     varName = str(varName)
     
@@ -162,13 +172,52 @@ def netcdf2PCRobjClone(ncFile,varName,dateInput,\
         if useDoy == "month":
             idx = int(date.month) - 1
         else:
-            if useDoy == "yearly":\
-                date = datetime.datetime(date.year,int(1),int(1))
-            if useDoy == "monthly":\
-                date = datetime.datetime(date.year,date.month,int(1))
             nctime = f.variables['time']  # A netCDF time variable object.
-            idx = nc.date2index(date, nctime, calendar=nctime.calendar, \
-                                                select='exact')
+            if useDoy == "yearly":
+                date  = datetime.datetime(date.year,int(1),int(1))
+            if useDoy == "monthly":
+                date = datetime.datetime(date.year,date.month,int(1))
+            if useDoy == "yearly" or useDoy == "monthly":
+                # if the desired year is not available, use the first year or the last year that is available
+                first_year_in_nc_file = findFirstYearInNCTime(nctime)
+                last_year_in_nc_file  =  findLastYearInNCTime(nctime)
+                #
+                if date.year < first_year_in_nc_file:  
+                    date = datetime.datetime(first_year_in_nc_file,date.month,date.day)
+                    msg  = "\n"
+                    msg += "WARNING related to the netcdf file: "+str(ncFile)+" ; variable: "+str(varName)+" !!!!!!"+"\n"
+                    msg += "The date "+str(dateInput)+" is NOT available. "
+                    msg += "The date "+str(date.year)+"-"+str(date.month)+"-"+str(date.day)+" is used."
+                    msg += "\n"
+                    logger.warning(msg)
+                if date.year > last_year_in_nc_file:  
+                    date = datetime.datetime(last_year_in_nc_file,date.month,date.day)
+                    msg  = "\n"
+                    msg += "WARNING related to the netcdf file: "+str(ncFile)+" ; variable: "+str(varName)+" !!!!!!"+"\n"
+                    msg += "The date "+str(dateInput)+" is NOT available. "
+                    msg += "The date "+str(date.year)+"-"+str(date.month)+"-"+str(date.day)+" is used."
+                    msg += "\n"
+                    logger.warning(msg)
+            try:
+                idx = nc.date2index(date, nctime, calendar = nctime.calendar, \
+                                                  select='exact')
+            except:                                  
+                try:
+                    idx = nc.date2index(date, nctime, calendar = nctime.calendar, \
+                                                      select='before')
+                    msg  = "\n"
+                    msg += "WARNING related to the netcdf file: "+str(ncFile)+" ; variable: "+str(varName)+" !!!!!!"+"\n"
+                    msg += "The date "+str(dateInput)+" is NOT available. The 'before' option is used while selecting netcdf time."
+                    msg += "\n"
+                except:
+                    idx = nc.date2index(date, nctime, calendar = nctime.calendar, \
+                                                      select='after')
+                    msg  = "\n"
+                    msg += "WARNING related to the netcdf file: "+str(ncFile)+" ; variable: "+str(varName)+" !!!!!!"+"\n"
+                    msg += "The date "+str(dateInput)+" is NOT available. The 'after' option is used while selecting netcdf time."
+                    msg += "\n"
+                logger.warning(msg)
+                                                  
     idx = int(idx)                                                  
 
     sameClone = True
@@ -197,7 +246,10 @@ def netcdf2PCRobjClone(ncFile,varName,dateInput,\
 
     cropData = f.variables[varName][int(idx),:,:]       # still original data
     factor = 1                          # needed in regridData2FinerGrid
+
     if sameClone == False:
+        
+        logger.debug('Crop to the clone map with lower left corner (x,y): '+str(xULClone)+' , '+str(yULClone))
         # crop to cloneMap:
         #~ xIdxSta = int(np.where(f.variables['lon'][:] == xULClone + 0.5*cellsizeInput)[0])
         minX    = min(abs(f.variables['lon'][:] - (xULClone + 0.5*cellsizeInput))) # ; print(minX)
@@ -208,8 +260,10 @@ def netcdf2PCRobjClone(ncFile,varName,dateInput,\
         yIdxSta = int(np.where(abs(f.variables['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
         yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(cellsizeInput/cellsizeClone)))
         cropData = f.variables[varName][idx,yIdxSta:yIdxEnd,xIdxSta:xIdxEnd]
-        factor = int(float(cellsizeInput)/float(cellsizeClone))
-    
+
+        factor = int(round(float(cellsizeInput)/float(cellsizeClone)))
+        if factor > 1: logger.debug('Resample: input cell size = '+str(float(cellsizeInput))+' ; output/clone cell size = '+str(float(cellsizeClone)))
+
     # convert to PCR object and close f
     if specificFillValue != None:
         outPCR = pcr.numpy2pcr(pcr.Scalar, \
@@ -403,11 +457,11 @@ def writePCRmapToDir(v,outFileName,outDir):
     fullFileName = getFullPath(outFileName,outDir)
     pcr.report(v,fullFileName)
 
-def readPCRmapClone(v,cloneMapFileName,tmpDir,absolutePath=None,isLddMap=False,cover=None,isNomMap=False):
+def readPCRmapClone(v,cloneMapFileName,tmpDir,absolutePath=None,isLddMap=False,cover=None,isNomMap=False,inputEPSG="EPSG:4326",outputEPSG="EPSG:4326"):
 	# v: inputMapFileName or floating values
 	# cloneMapFileName: If the inputMap and cloneMap have different clones,
 	#                   resampling will be done.   
-    print(v)
+    logger.debug('read file/values: '+str(v))
     if v == "None":
         PCRmap = str("None")
     elif not re.match(r"[0-9.-]*$",v):
@@ -419,15 +473,20 @@ def readPCRmapClone(v,cloneMapFileName,tmpDir,absolutePath=None,isLddMap=False,c
         else:
             # resample using GDAL:
             output = tmpDir+'temp.map'
-            warp = gdalwarpPCR(v,output,cloneMapFileName,tmpDir,isLddMap,isNomMap)
+            # if no re-projection needed:
+            if inputEPSG == outputEPSG or outputEPSG == None: 
+                warp = gdalwarpPCR(v,output,cloneMapFileName,tmpDir,isLddMap,isNomMap)
+            else:
+                warp = gdalwarpPCR(v,output,cloneMapFileName,tmpDir,isLddMap,isNomMap,inputEPSG,outputEPSG)
             # read from temporary file and delete the temporary file:
             PCRmap = pcr.readmap(output)
             if isLddMap == True: PCRmap = pcr.ifthen(pcr.scalar(PCRmap) < 10., PCRmap)
             if isLddMap == True: PCRmap = pcr.ldd(PCRmap)
             if isNomMap == True: PCRmap = pcr.ifthen(pcr.scalar(PCRmap) >  0., PCRmap)
             if isNomMap == True: PCRmap = pcr.nominal(PCRmap)
-            co = 'rm '+str(tmpDir)+'*.*'
-            cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+            if os.path.isdir(tmpDir):
+                shutil.rmtree(tmpDir)
+            os.makedirs(tmpDir)
     else:
         PCRmap = pcr.scalar(float(v))
     if cover != None:
@@ -476,13 +535,13 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False):
     # 
     # remove temporary files:
     co = 'rm '+str(tmpDir)+'*.*'
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     # converting files to tif:
     co = 'gdal_translate -ot Float64 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
     if isLddMap == True: co = 'gdal_translate -ot Int32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
     if isNominalMap == True: co = 'gdal_translate -ot Int32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     # get the attributes of PCRaster map:
     cloneAtt = getMapAttributesALL(cloneOut)
@@ -498,21 +557,21 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False):
          ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
            str(tmpDir)+'tmp_inp.tif '+ \
            str(tmpDir)+'tmp_out.tif'
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     co = 'gdal_translate -of PCRaster '+ \
               str(tmpDir)+'tmp_out.tif '+str(output)
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     co = 'mapattr -c '+str(cloneOut)+' '+str(output)
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     #~ co = 'aguila '+str(output)
     #~ print(co)
-    #~ cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+    #~ cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     co = 'rm '+str(tmpDir)+'tmp*.*'
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     co = None; cOut = None; err = None
     del co; del cOut; del err
     stdout = None; del stdout
@@ -523,12 +582,16 @@ def getFullPath(inputPath,absolutePath,completeFileName = True):
     # 19 Mar 2013 created by Edwin H. Sutanudjaja
     # Function: to get the full absolute path of a folder or a file
           
+    # replace all \ with /
+    inputPath = str(inputPath).replace("\\", "/")
+    absolutePath = str(absolutePath).replace("\\", "/")
+    
     # list of suffixes (extensions) that can be used:
-    suffix = ('/','_','.map','.nc','.dat','.txt','.asc','.ldd',\
+    suffix = ('/','_','.nc4','.map','.nc','.dat','.txt','.asc','.ldd',\
               '.001','.002','.003','.004','.005','.006',\
               '.007','.008','.009','.010','.011','.012')
     
-    if inputPath.startswith('/'):
+    if inputPath.startswith('/') or str(inputPath)[1] == ":":
         fullPath = str(inputPath)
     else:
         if absolutePath.endswith('/'): 
@@ -605,13 +668,15 @@ def isLastDayOfMonth(date):
     else:
         return False
 
-def getMapAttributesALL(cloneMap):
-    co = ['mapattr -p %s ' %(cloneMap)]
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+def getMapAttributesALL(cloneMap,arcDegree=True):
+    cOut,err = subprocess.Popen(str('mapattr -p %s ' %(cloneMap)), stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
+
     if err !=None or cOut == []:
         print "Something wrong with mattattr in virtualOS, maybe clone Map does not exist ? "
         sys.exit()
-    mapAttr = {'cellsize': float(cOut.split()[7]) ,\
+    cellsize = float(cOut.split()[7])
+    if arcDegree == True: cellsize = round(cellsize * 360000.)/360000.
+    mapAttr = {'cellsize': float(cellsize)        ,\
                'rows'    : float(cOut.split()[3]) ,\
                'cols'    : float(cOut.split()[5]) ,\
                'xUL'     : float(cOut.split()[17]),\
@@ -621,9 +686,8 @@ def getMapAttributesALL(cloneMap):
     n = gc.collect() ; del gc.garbage[:] ; n = None ; del n
     return mapAttr 
 
-def getMapAttributes(cloneMap,attribute):
-    co = ['mapattr -p %s ' %(cloneMap)]
-    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+def getMapAttributes(cloneMap,attribute,arcDegree=True):
+    cOut,err = subprocess.Popen(str('mapattr -p %s ' %(cloneMap)), stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     #print cOut
     if err !=None or cOut == []:
         print "Something wrong with mattattr in virtualOS, maybe clone Map does not exist ? "
@@ -633,7 +697,9 @@ def getMapAttributes(cloneMap,attribute):
     del co; del err
     n = gc.collect() ; del gc.garbage[:] ; n = None ; del n
     if attribute == 'cellsize':
-        return float(cOut.split()[7])
+        cellsize = float(cOut.split()[7])
+        if arcDegree == True: cellsize = round(cellsize * 360000.)/360000.
+        return cellsize  
     if attribute == 'rows':
         return int(cOut.split()[3])
         #return float(cOut.split()[3])
@@ -674,11 +740,14 @@ def getLastDayOfMonth(date):
 
 
 
-def getMinMaxMean(mapFile):
+def getMinMaxMean(mapFile,ignoreEmptyMap=False):
     mn = pcr.cellvalue(pcr.mapminimum(mapFile),1)[0]
     mx = pcr.cellvalue(pcr.mapmaximum(mapFile),1)[0]
-    nrValues  = pcr.cellvalue(pcr.maptotal(pcr.scalar(pcr.defined(mapFile))), 1 ) [0] #/ getNumNonMissingValues(mapFile)
-    return mn,mx,(getMapTotal(mapFile) / nrValues)
+    nrValues = pcr.cellvalue(pcr.maptotal(pcr.scalar(pcr.defined(mapFile))), 1 ) [0] #/ getNumNonMissingValues(mapFile)
+    if nrValues == 0.0 and ignoreEmptyMap: 
+        return 0.0,0.0,0.0
+    else:
+        return mn,mx,(getMapTotal(mapFile) / nrValues)
 
 def getMapVolume(mapFile,cellareaFile):
     ''' returns the sum of all grid cell values '''
@@ -688,7 +757,7 @@ def getMapVolume(mapFile,cellareaFile):
 def secondsPerDay():
     return float(3600 * 24)
     
-def getValDivZero(x,y,y_lim,z_def= 0.):
+def getValDivZero(x,y,y_lim=smallNumber,z_def= 0.):
   #-returns the result of a division that possibly involves a zero
   # denominator; in which case, a default value is substituted:
   # x/y= z in case y > y_lim,
@@ -812,8 +881,23 @@ def waterBalanceCheck(fluxesIn,fluxesOut,preStorages,endStorages,processName,Pri
     a,b,c = getMinMaxMean(inMap + dsMap- outMap)
     if abs(a) > threshold or abs(b) > threshold:
         if PrintOnlyErrors: 
-            print "WBError %s Min %f Max %f Mean %f" %(processName,a,b,c)
-            print ""
+            
+            msg  = "\n"
+            msg += "\n"
+            msg  = "\n"
+            msg += "\n"
+            msg += "##############################################################################################################################################\n"
+            msg += "WARNING !!!!!!!! Water Balance Error %s Min %f Max %f Mean %f" %(processName,a,b,c)
+            msg += "\n"
+            msg += "##############################################################################################################################################\n"
+            msg += "\n"
+            msg += "\n"
+            msg += "\n"
+            
+            logger.error(msg)
+
+            #~ pcr.report(inMap + dsMap - outMap,"wb.map")
+            #~ os.system("aguila wb.map")
             
             #~ # for debugging:
             #~ error = inMap + dsMap- outMap
@@ -825,6 +909,8 @@ def waterBalanceCheck(fluxesIn,fluxesOut,preStorages,endStorages,processName,Pri
     #~ wb = inMap + dsMap - outMap
     #~ maxWBError = pcr.cellvalue(pcr.mapmaximum(pcr.abs(wb)), 1, 1)[0]
     #~ #return wb
+
+
 
 
 def waterBalance(  fluxesIn,  fluxesOut,  deltaStorages,  processName,   PrintOnlyErrors,  dateStr,threshold=1e-5):
@@ -898,4 +984,148 @@ def waterBalance(  fluxesIn,  fluxesOut,  deltaStorages,  processName,   PrintOn
             #)
 
     return inMap + dsMap - outMap
+
+
+
+def waterAbstractionAndAllocation(water_demand_volume,available_water_volume,allocation_zones,\
+                                  zone_area = None,
+                                  high_volume_treshold = 1000000.,
+                                  debug_water_balance = True,\
+                                  extra_info_for_water_balance_reporting = "",
+                                  ignore_small_values = True):
+
+    logger.debug("Allocation of abstraction.")
+    
+    # demand volume in each cell (unit: m3)
+    if ignore_small_values: # ignore small values to avoid runding error
+        cellVolDemand = pcr.rounddown(pcr.max(0.0, water_demand_volume))
+    else:
+        cellVolDemand = pcr.max(0.0, water_demand_volume)
+    
+    # total demand volume in each zone/segment (unit: m3)
+    zoneVolDemand = pcr.areatotal(cellVolDemand, allocation_zones)
+    
+    # total available water volume in each cell
+    if ignore_small_values: # ignore small values to avoid runding error
+        cellAvlWater = pcr.rounddown(pcr.max(0.00, available_water_volume))
+    else:
+        cellAvlWater = pcr.max(0.00, available_water_volume)
+    
+    # total available water volume in each zone/segment (unit: m3)
+    # - to minimize numerical errors, separating cellAvlWater 
+    if not isinstance(high_volume_treshold,types.NoneType):
+        # mask: 0 for small volumes ; 1 for large volumes (e.g. in lakes and reservoirs)
+        mask = pcr.cover(\
+               pcr.ifthen(cellAvlWater > high_volume_treshold, pcr.boolean(1)), pcr.boolean(0))
+        zoneAvlWater  = pcr.areatotal(
+                        pcr.ifthenelse(mask, 0.0, cellAvlWater), allocation_zones)
+        zoneAvlWater += pcr.areatotal(                
+                        pcr.ifthenelse(mask, cellAvlWater, 0.0), allocation_zones)
+    else:
+        zoneAvlWater  = pcr.areatotal(cellAvlWater, allocation_zones)
+    
+    # total actual water abstraction volume in each zone/segment (unit: m3)
+    # - limited to available water
+    zoneAbstraction = pcr.min(zoneAvlWater, zoneVolDemand)
+    
+    # actual water abstraction volume in each cell (unit: m3)
+    cellAbstraction = getValDivZero(\
+                      cellAvlWater, zoneAvlWater, smallNumber)*zoneAbstraction
+    cellAbstraction = pcr.min(cellAbstraction, cellAvlWater)                                                                   
+    if ignore_small_values: # ignore small values to avoid runding error
+        cellAbstraction = pcr.rounddown(pcr.max(0.00, cellAbstraction))
+    # to minimize numerical errors, separating cellAbstraction 
+    if not isinstance(high_volume_treshold,types.NoneType):
+        # mask: 0 for small volumes ; 1 for large volumes (e.g. in lakes and reservoirs)
+        mask = pcr.cover(\
+               pcr.ifthen(cellAbstraction > high_volume_treshold, pcr.boolean(1)), pcr.boolean(0))
+        zoneAbstraction  = pcr.areatotal(
+                           pcr.ifthenelse(mask, 0.0, cellAbstraction), allocation_zones)
+        zoneAbstraction += pcr.areatotal(                
+                           pcr.ifthenelse(mask, cellAbstraction, 0.0), allocation_zones)
+    else:
+        zoneAbstraction  = pcr.areatotal(cellAbstraction, allocation_zones)    
+    
+    # allocation water to meet water demand (unit: m3)
+    cellAllocation  = getValDivZero(\
+                      cellVolDemand, zoneVolDemand, smallNumber)*zoneAbstraction 
+    
+    #~ # extraAbstraction to minimize numerical errors:
+    #~ zoneDeficitAbstraction = pcr.max(0.0,\
+                                     #~ pcr.areatotal(cellAllocation , allocation_zones) -\
+                                     #~ pcr.areatotal(cellAbstraction, allocation_zones))
+    #~ remainingCellAvlWater = pcr.max(0.0, cellAvlWater - cellAbstraction)
+    #~ cellAbstraction      += zoneDeficitAbstraction * getValDivZero(\
+                            #~ remainingCellAvlWater, 
+                            #~ pcr.areatotal(remainingCellAvlWater, allocation_zones), 
+                            #~ smallNumber)                        
+    #~ # 
+    #~ # extraAllocation to minimize numerical errors:
+    #~ zoneDeficitAllocation = pcr.max(0.0,\
+                                    #~ pcr.areatotal(cellAbstraction, allocation_zones) -\
+                                    #~ pcr.areatotal(cellAllocation , allocation_zones))
+    #~ remainingCellDemand = pcr.max(0.0, cellVolDemand - cellAllocation)
+    #~ cellAllocation     += zoneDeficitAllocation * getValDivZero(\
+                          #~ remainingCellDemand, 
+                          #~ pcr.areatotal(remainingCellDemand, allocation_zones), 
+                          #~ smallNumber)                        
+    
+    if debug_water_balance and not isinstance(zone_area,types.NoneType):
+
+        zoneAbstraction = pcr.cover(pcr.areatotal(cellAbstraction, allocation_zones)/zone_area, 0.0)
+        zoneAllocation  = pcr.cover(pcr.areatotal(cellAllocation , allocation_zones)/zone_area, 0.0)
+    
+        waterBalanceCheck([zoneAbstraction],\
+                          [zoneAllocation],\
+                          [pcr.scalar(0.0)],\
+                          [pcr.scalar(0.0)],\
+                          'abstraction - allocation per zone/segment (PS: Error here may be caused by rounding error.)' ,\
+                           True,\
+                           extra_info_for_water_balance_reporting,threshold=1e-4)
+    
+    return cellAbstraction, cellAllocation
+
+
+def findLastYearInNCFile(ncFile):
+
+    # open a netcdf file:
+    if ncFile in filecache.keys():
+        f = filecache[ncFile]
+    else:
+        f = nc.Dataset(ncFile)
+        filecache[ncFile] = f
+
+    # last datetime
+    last_datetime_year = findLastYearInNCTime(f.variables['time']) 
+    
+    return last_datetime_year
+    
+def findLastYearInNCTime(ncTimeVariable):
+
+    # last datetime
+    last_datetime = nc.num2date(ncTimeVariable[len(ncTimeVariable) - 1],\
+                                ncTimeVariable.units,\
+                                ncTimeVariable.calendar) 
+    
+    return last_datetime.year
+
+def findFirstYearInNCTime(ncTimeVariable):
+
+    # first datetime
+    first_datetime = nc.num2date(ncTimeVariable[0],\
+                                ncTimeVariable.units,\
+                                ncTimeVariable.calendar) 
+    
+    return first_datetime.year
+
+def cmd_line(command_line,using_subprocess = True):
+
+    msg = "Call: "+str(command_line)
+    logger.debug(msg)
+    
+    co = command_line
+    if using_subprocess:
+        cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open('/dev/null'),shell=True).communicate()
+    else:
+        os.system(co)
 
