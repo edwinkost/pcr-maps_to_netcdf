@@ -38,7 +38,7 @@ class OutputNetcdf():
         
         # cell centres coordinates
         self.longitudes = np.arange(x_min + deltaLon/2., x_max - deltaLon/2., deltaLon)
-        self.latitudes  = np.arange(y_max - deltaLat/2., y_min + deltaLat/2., deltaLat)
+        self.latitudes  = np.arange(y_max - deltaLat/2., y_min + deltaLat/2.,-deltaLat)
 
         #~ # cell centres coordinates
         #~ self.longitudes = np.linspace(x_min + deltaLon/2., x_max - deltaLon/2., cols)
