@@ -20,19 +20,42 @@ class OutputNetcdf():
         cloneMap = pcr.boolean(pcr.readmap(cloneMapFileName))
         cloneMap = pcr.boolean(pcr.scalar(1.0))
         
-        # latitudes and longitudes
-        self.latitudes  = np.unique(pcr.pcr2numpy(pcr.ycoordinate(cloneMap), vos.MV))[::-1]
-        self.longitudes = np.unique(pcr.pcr2numpy(pcr.xcoordinate(cloneMap), vos.MV))
+        #~ # latitudes and longitudes (from the 
+        #~ self.latitudes  = np.unique(pcr.pcr2numpy(pcr.ycoordinate(cloneMap), vos.MV))[::-1]
+        #~ self.longitudes = np.unique(pcr.pcr2numpy(pcr.xcoordinate(cloneMap), vos.MV))
 
+        # properties of the clone maps
+        # - numbers of rows and colums
+        rows = pcr.clone().nrRows() 
+        cols = pcr.clone().nrCols()
+        # - cell size in arc minutes rounded to one value behind the decimal
+        cellSizeInArcMin = np.round(pcr.clone().cellSize() * 60.0, 1) 
+        # - cell sizes in ar degrees for longitude and langitude direction 
+        deltaLon = cellSizeInArcMin / 60.
+        deltaLat = deltaLon
+        # - coordinates of the upper left corner - rounded to two values behind the decimal in order to avoid rounding errors during (future) resampling process
+        x_min = np.round(pcr.clone().west(), 2)
+        y_max = np.round(pcr.clone().north(), 2)
+        # - coordinates of the lower right corner - rounded to two values behind the decimal in order to avoid rounding errors during (future) resampling process
+        x_max = np.round(x_min + cols*deltaLon, 2) 
+        y_min = np.round(y_max - rows*deltaLat, 2) 
+        
+        # cell centres coordinates
+        self.longitudes = np.linspace(x_min + deltaLon, x_max - deltaLon, cols + 1)
+        self.latitudes= = np.linspace(y_max - deltaLat, y_min + deltaLat, rows + 1)
+        
         # netCDF format and attributes:
+        important_information = "This dataset is resampled to "+str(cellSizeInArcMin)+" arc minute resolution. "
         self.format = 'NETCDF3_CLASSIC'
         self.attributeDictionary = {}
         self.attributeDictionary['institution']  = "European Commission - JRC"
         self.attributeDictionary['title'      ]  = "EFAS-Meteo 5km for the Rhine-Meuse basin"
         self.attributeDictionary['source'     ]  = "5km Gridded Meteo Database (C) European Commission - JRDC, 2014"
-        self.attributeDictionary['history'    ]  = "The data were provided by Ad de Roo (ad.de-roo@jrc.ec.europa.eu) on 19 November 2014 and then converted by Edwin H. Sutanudjaja (E.H.Sutanudjaja@uu.nl) to netcdf files on 27 November 2014."
+        self.attributeDictionary['history'    ]  = "The data were provided by Ad de Roo (ad.de-roo@jrc.ec.europa.eu) on 19 November 2014 and then converted by Edwin H. Sutanudjaja (E.H.Sutanudjaja@uu.nl) to netcdf. "
+        self.attributeDictionary['history'    ] += important_information 
         self.attributeDictionary['references' ]  = "Ntegeka et al., 2013. EFAS-Meteo: A European daily high-resolution gridded meteorological data set. JRC Technical Reports. doi: 10.2788/51262"
-        self.attributeDictionary['comment'    ]  = "Please use this dataset only for Hyper-Hydro test bed experiments. " 
+        self.attributeDictionary['comment'    ]  = important_information 
+        self.attributeDictionary['comment'    ] += "Please use this dataset only for Hyper-Hydro test bed experiments. " 
         self.attributeDictionary['comment'    ] += "For using it and publishing it, please acknowledge its source: 5km Gridded Meteo Database (C) European Commission - JRDC, 2014 and its reference: Ntegeka et al., 2013 (doi: 10.2788/51262). "
         self.attributeDictionary['comment'    ] += "The data are in European ETRS projection, 5km grid; http://en.wikipedia.org/wiki/European_grid. "
 

@@ -15,26 +15,39 @@ class CalcFramework(DynamicModel):
 
     def __init__(self, cloneMapFileName,\
                        pcraster_files, \
-                       output, \
-                       modelTime):
+                       modelTime, \
+                       output, inputEPSG = None, outputEPSG = None):
         DynamicModel.__init__(self)           # 
         pcr.setclone(cloneMapFileName)
         
+        # time variable/object
         self.modelTime = modelTime
         
-        self.pcraster_files = pcraster_files
-        
-        # move to the input folder
-        os.chdir(self.pcraster_files['directory'])
-        
+        # output file name, folder name, etc. 
         self.output = output
         self.output['file_name'] = vos.getFullPath(self.output['file_name'], self.output['folder'])
         
+        # input and output projection/ccordinate systems 
+        self.inputEPSG  =  inputEPSG
+        self.outputEPSG = outputEPSG
+
+        # prepare temporary directory
+        self.tmpDir = output['folder']+"/tmp/"
+        try:
+            os.makedirs(self.tmpDir)
+            os.system('rm -r '+tmpDir+"/*")
+        except:
+            pass
+        
+        # the beginning part of name for pcraster files (e.g. pr000000.001)
+        self.pcraster_files = pcraster_files
+
+        # move to the output folder
+        os.chdir(self.output['folder'])
+
         # object for reporting
         self.netcdf_report = OutputNetcdf(cloneMapFileName, self.output['description'])       
 
-        print(self.output['long_name'])
-        
         # make a netcdf file
         self.netcdf_report.createNetCDF(self.output['file_name'],\
                                         self.output['variable_name'],\
@@ -51,7 +64,24 @@ class CalcFramework(DynamicModel):
 
         # open input data 
         if self.output['variable_name'] != "temperature":
-            pcr_map_values = self.readmap(self.pcraster_files['file_name'])
+            if self.modelTime.timeStepPCR 
+            
+            
+            pcr_map_values = vos.readPCRmapClone(v = self.pcraster_files['file_name'],\
+                                                 cloneMapFileName = ,\
+                                                 tmpDir = self.tmpDir,
+                                                 absolutePath = None, isLddMap = False,
+                                                 cover = pcr.scalar(0.0), 
+                                                 isNomMap = False, 
+                                                 inputEPSG = "EPSG:4326", 
+                                                 outputEPSG = "EPSG:4326", 
+                                                 method= " near")
+            
+            
+            
+            
+            
+            self.readmap()
         else:
             pcr_map_values = 0.50*(self.readmap("tn") + self.readmap("tx"))
 

@@ -28,32 +28,36 @@ import efas_variable_list as varDict
 # obtain efas_variable_code from the system argurment
 efas_variable_name = sys.argv[1]
 
+# file name of the clone map defining the scope of output
+cloneMapFileName = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/clone_maps/RhineMeuse03min.clone.map"
+
 # directory where the original pcraster files are stored
 pcraster_files = {}
-pcraster_files['directory'] = "/home/sutan101/data/forcing_data_RhineMeuse_5km/meteo/"
+pcraster_files['directory'] = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/source/pcraster/03min/"
 pcraster_files['file_name'] = efas_variable_name # "pr"
+
+# output folder
+output = {}
+output['folder']        = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/netcdf/"
+output['variable_name'] = varDict.netcdf_short_name[efas_variable_name] 
+output['file_name']     = output['variable_name']+"_efas_rhine-meuse"+".nc"
+output['unit']          = varDict.netcdf_unit[efas_variable_name]
+output['long_name']     = varDict.netcdf_long_name[efas_variable_name] 
+output['description']   = varDict.description[efas_variable_name]      
+
+# prepare output directory
+try:
+    os.makedirs(output['folder'])
+except:
+    pass
 
 startDate     = "1990-01-01" # YYYY-MM-DD
 endDate       = None
 nrOfTimeSteps = 9070         # based on the last file provided by Ad 
 
-# clone map file name
-cloneMapFileName = "/home/sutan101/data/forcing_data_RhineMeuse_5km/meteo/pr000000.001"
-# The clone map must be consistent with the input pcraster map files. 
-
-# output folder
-output = {}
-output['folder']        = "/home/sutan101/data/forcing_data_RhineMeuse_5km/netcdf/"
-output['variable_name'] = varDict.netcdf_short_name[efas_variable_name] 
-output['file_name']     = output['variable_name']+"_efas_rhine-meuse_5km"+".nc"
-output['unit']          = varDict.netcdf_unit[efas_variable_name]
-output['long_name']     = varDict.netcdf_long_name[efas_variable_name] 
-output['description']   = varDict.description[efas_variable_name]      
-
-try:
-    os.makedirs(output['folder'])
-except:
-    pass
+# projection/coordinate sy
+inputEPSG  = "EPSG:3035" 
+outputEPSG = "EPSG:4326"
 
 def main():
     
@@ -63,7 +67,7 @@ def main():
     
     calculationModel = CalcFramework(cloneMapFileName,\
                                      pcraster_files, \
-                                     output, \
+                                     output, tmpDir, inputEPSG, outputEPSG, \
                                      modelTime)
     dynamic_framework = DynamicFramework(calculationModel,modelTime.nrOfTimeSteps)
     dynamic_framework.setQuiet(True)

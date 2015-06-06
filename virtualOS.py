@@ -457,7 +457,7 @@ def writePCRmapToDir(v,outFileName,outDir):
     fullFileName = getFullPath(outFileName,outDir)
     pcr.report(v,fullFileName)
 
-def readPCRmapClone(v,cloneMapFileName,tmpDir,absolutePath=None,isLddMap=False,cover=None,isNomMap=False,inputEPSG="EPSG:4326",outputEPSG="EPSG:4326"):
+def readPCRmapClone(v,cloneMapFileName,tmpDir,absolutePath=None,isLddMap=False,cover=None,isNomMap=False,inputEPSG="EPSG:4326",outputEPSG="EPSG:4326",method="near"):
 	# v: inputMapFileName or floating values
 	# cloneMapFileName: If the inputMap and cloneMap have different clones,
 	#                   resampling will be done.   
@@ -477,7 +477,7 @@ def readPCRmapClone(v,cloneMapFileName,tmpDir,absolutePath=None,isLddMap=False,c
             if inputEPSG == outputEPSG or outputEPSG == None: 
                 warp = gdalwarpPCR(v,output,cloneMapFileName,tmpDir,isLddMap,isNomMap)
             else:
-                warp = gdalwarpPCR(v,output,cloneMapFileName,tmpDir,isLddMap,isNomMap,inputEPSG,outputEPSG)
+                warp = gdalwarpPCR(v,output,cloneMapFileName,tmpDir,isLddMap,isNomMap,inputEPSG,outputEPSG,method)
             # read from temporary file and delete the temporary file:
             PCRmap = pcr.readmap(output)
             if isLddMap == True: PCRmap = pcr.ifthen(pcr.scalar(PCRmap) < 10., PCRmap)
@@ -529,7 +529,7 @@ def isSameClone(inputMapFileName,cloneMapFileName):
     if yULClone != yULInput: sameClone = False
     return sameClone
 
-def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False):
+def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False,inputEPSG="default",outputEPSG="default",method="default"):
     # 19 Mar 2013 created by Edwin H. Sutanudjaja
     # all input maps must be in PCRaster maps
     # 
@@ -554,6 +554,15 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False):
     te = '-te '+str(xmin)+' '+str(ymin)+' '+str(xmax)+' '+str(ymax)+' '
     tr = '-tr '+str(xres)+' '+str(yres)+' '
     co = 'gdalwarp '+te+tr+ \
+         ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
+           str(tmpDir)+'tmp_inp.tif '+ \
+           str(tmpDir)+'tmp_out.tif'
+    if inputEPSG != "default" or outputEPSG != "default" or method != "default":
+    co = 'gdalwarp '+\
+         '-s_srs '+inputEPSG+" "+\
+         '-t_srs '+outputEPSG+" "+\
+         te+tr+" "+\ 
+         '-r '+method+\
          ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
            str(tmpDir)+'tmp_inp.tif '+ \
            str(tmpDir)+'tmp_out.tif'
