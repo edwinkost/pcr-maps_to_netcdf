@@ -78,7 +78,7 @@ def initialize_logging(log_file_location, log_file_front_name = "log", debug_mod
     logging.getLogger().addHandler(file_handler)
     
     # file name for debug log 
-    log_filename = log_file_location + "/" + log_file_front_name + '_' + str(timestamp.isoformat()).replace(":",".") + '.dbg'
+    dbg_filename = log_file_location + "/" + log_file_front_name + '_' + str(timestamp.isoformat()).replace(":",".") + '.dbg'
 
     # create handler, add to root logger
     debug_handler = logging.FileHandler(dbg_filename)
