@@ -25,6 +25,12 @@ import virtualOS as vos
 # variable dictionaries:
 import efas_variable_list as varDict
 
+import logging
+logger = logging.getLogger(__name__)
+
+
+###########################################################################################################
+
 # obtain efas_variable_code from the system argurment
 efas_variable_name = sys.argv[1]
 
@@ -45,10 +51,11 @@ output['unit']          = varDict.netcdf_unit[efas_variable_name]
 output['long_name']     = varDict.netcdf_long_name[efas_variable_name] 
 output['description']   = varDict.description[efas_variable_name]      
 
-# prepare output directory
+# prepare the output directory
 try:
     os.makedirs(output['folder'])
 except:
+    os.system('rm -r ')
     pass
 
 startDate     = "1990-01-01" # YYYY-MM-DD
@@ -59,7 +66,17 @@ nrOfTimeSteps = 9070         # based on the last file provided by Ad
 inputEPSG  = "EPSG:3035" 
 outputEPSG = "EPSG:4326"
 
+###########################################################################################################
+
 def main():
+    
+    # prepare logger and its directory
+    log_file_location = output['folder']+"/log/"
+    try:
+        os.makedirs(log_file_location)
+    except:
+        pass
+    vos.initialize_logging(log_file_location)
     
     # time object
     modelTime = ModelTime() # timeStep info: year, month, day, doy, hour, etc
@@ -67,8 +84,9 @@ def main():
     
     calculationModel = CalcFramework(cloneMapFileName,\
                                      pcraster_files, \
-                                     output, tmpDir, inputEPSG, outputEPSG, \
-                                     modelTime)
+                                     modelTime, \
+                                     output, inputEPSG, outputEPSG)
+
     dynamic_framework = DynamicFramework(calculationModel,modelTime.nrOfTimeSteps)
     dynamic_framework.setQuiet(True)
     dynamic_framework.run()

@@ -11,14 +11,20 @@ from pcraster.framework import DynamicModel
 from outputNetcdf import OutputNetcdf
 import virtualOS as vos
 
+import logging
+logger = logging.getLogger(__name__)
+
 class CalcFramework(DynamicModel):
 
     def __init__(self, cloneMapFileName,\
                        pcraster_files, \
                        modelTime, \
                        output, inputEPSG = None, outputEPSG = None):
-        DynamicModel.__init__(self)           # 
-        pcr.setclone(cloneMapFileName)
+        DynamicModel.__init__(self)
+        
+        # set the clone map
+        self.cloneMapFileName = cloneMapFileName
+        pcr.setclone(self.cloneMapFileName)
         
         # time variable/object
         self.modelTime = modelTime
@@ -39,11 +45,11 @@ class CalcFramework(DynamicModel):
         except:
             pass
         
-        # the beginning part of name for pcraster files (e.g. pr000000.001)
+        # pcraster input files
         self.pcraster_files = pcraster_files
-
-        # move to the output folder
-        os.chdir(self.output['folder'])
+        # - the begining part of pcraster file names (e.g. "pr" for "pr000000.001")
+        self.pcraster_file_name = self.pcraster_files['directory']+"/"+\
+                                  self.pcraster_files['file_name']
 
         # object for reporting
         self.netcdf_report = OutputNetcdf(cloneMapFileName, self.output['description'])       
@@ -64,26 +70,40 @@ class CalcFramework(DynamicModel):
 
         # open input data 
         if self.output['variable_name'] != "temperature":
-            if self.modelTime.timeStepPCR 
-            
-            
-            pcr_map_values = vos.readPCRmapClone(v = self.pcraster_files['file_name'],\
-                                                 cloneMapFileName = ,\
-                                                 tmpDir = self.tmpDir,
-                                                 absolutePath = None, isLddMap = False,
-                                                 cover = pcr.scalar(0.0), 
-                                                 isNomMap = False, 
-                                                 inputEPSG = "EPSG:4326", 
-                                                 outputEPSG = "EPSG:4326", 
-                                                 method= " near")
-            
-            
-            
-            
-            
-            self.readmap()
+            pcraster_map_file_name = pcr.framework.frameworkBase.generateNameT(self.pcraster_file_name,\
+                                                                               self.modelTime.timeStepPCR) 
+            pcr_map_values = vos.readPCRmapClone(v = pcraster_map_file_name,\
+                                                 cloneMapFileName = self.cloneMapFileName,\
+                                                 tmpDir = self.tmpDir,\
+                                                 absolutePath = None, isLddMap = False,\
+                                                 cover = 0.0,\
+                                                 isNomMap = False,\
+                                                 inputEPSG = self.inputEPSG,\
+                                                 outputEPSG = self.outputEPSG,\
+                                                 method = " near")
         else:
-            pcr_map_values = 0.50*(self.readmap("tn") + self.readmap("tx"))
+            min_map_file_name = pcr.framework.frameworkBase.generateNameT("tn", self.modelTime.timeStepPCR)
+            max_map_file_name = pcr.framework.frameworkBase.generateNameT("tx", self.modelTime.timeStepPCR)
+            min_map_values = vos.readPCRmapClone(v = min_map_file_name,\
+                                                 cloneMapFileName = self.cloneMapFileName,\
+                                                 tmpDir = self.tmpDir,\
+                                                 absolutePath = None, isLddMap = False,\
+                                                 cover = 0.0,\
+                                                 isNomMap = False,\
+                                                 inputEPSG = self.inputEPSG,\
+                                                 outputEPSG = self.outputEPSG,\
+                                                 method = " near")
+            max_map_values = vos.readPCRmapClone(v = max_map_file_name,\
+                                                 cloneMapFileName = self.cloneMapFileName,\
+                                                 tmpDir = self.tmpDir,\
+                                                 absolutePath = None, isLddMap = False,\
+                                                 cover = 0.0,\
+                                                 isNomMap = False,\
+                                                 inputEPSG = self.inputEPSG,\
+                                                 outputEPSG = self.outputEPSG,\
+                                                 method = " near")
+            pcr_map_values = 0.50*(min_map_values + \
+                                   max_map_values)
 
         # reporting
         timeStamp = datetime.datetime(self.modelTime.year,\
