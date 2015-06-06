@@ -44,6 +44,8 @@ class OutputNetcdf():
         self.longitudes = np.linspace(x_min + deltaLon/2., x_max - deltaLon/2., cols + 1)
         self.latitudes  = np.linspace(y_max - deltaLat/2., y_min + deltaLat/2., rows + 1)
         
+        print self.longitudes
+        
         # netCDF format and attributes:
         important_information = "This dataset is resampled to "+str(cellSizeInArcMin)+" arc minute resolution. "
         self.format = 'NETCDF3_CLASSIC'
