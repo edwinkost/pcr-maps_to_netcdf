@@ -20,10 +20,6 @@ class OutputNetcdf():
         cloneMap = pcr.boolean(pcr.readmap(cloneMapFileName))
         cloneMap = pcr.boolean(pcr.scalar(1.0))
         
-        #~ # latitudes and longitudes (from the 
-        #~ self.latitudes  = np.unique(pcr.pcr2numpy(pcr.ycoordinate(cloneMap), vos.MV))[::-1]
-        #~ self.longitudes = np.unique(pcr.pcr2numpy(pcr.xcoordinate(cloneMap), vos.MV))
-
         # properties of the clone maps
         # - numbers of rows and colums
         rows = pcr.clone().nrRows() 
@@ -41,10 +37,16 @@ class OutputNetcdf():
         y_min = np.round(y_max - rows*deltaLat, 2) 
         
         # cell centres coordinates
-        self.longitudes = np.linspace(x_min + deltaLon/2., x_max - deltaLon/2., cols)
-        self.latitudes  = np.linspace(y_max - deltaLat/2., y_min + deltaLat/2., rows)
+        self.longitudes = np.arrange(x_min + deltaLon/2., x_max - deltaLon/2., deltaLon)
+        self.latitudes  = np.arrange(y_max - deltaLat/2., y_min + deltaLat/2., deltaLat)
+
+        #~ # cell centres coordinates
+        #~ self.longitudes = np.linspace(x_min + deltaLon/2., x_max - deltaLon/2., cols)
+        #~ self.latitudes  = np.linspace(y_max - deltaLat/2., y_min + deltaLat/2., rows)
         
-        print self.longitudes
+        #~ # cell centres coordinates (latitudes and longitudes, directly from the clone maps)
+        #~ self.latitudes  = np.unique(pcr.pcr2numpy(pcr.ycoordinate(cloneMap), vos.MV))[::-1]
+        #~ self.longitudes = np.unique(pcr.pcr2numpy(pcr.xcoordinate(cloneMap), vos.MV))
         
         # netCDF format and attributes:
         important_information = "This dataset is resampled to "+str(cellSizeInArcMin)+" arc minute resolution. "

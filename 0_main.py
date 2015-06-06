@@ -38,7 +38,7 @@ efas_variable_name = ["pd","pr","rg","ta","ws"]
 efas_variable_name = sys.argv[1]
 
 # file name of the clone map defining the scope of output
-cloneMapFileName = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/clone_maps/RhineMeuse03min.clone.map"
+cloneMapFileName = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/clone_maps/RhineMeuse2.5min.clone.map"
 
 # directory where the original pcraster files are stored
 pcraster_files = {}
@@ -47,7 +47,7 @@ pcraster_files['file_name'] = efas_variable_name # "pr"
 
 # output folder
 output = {}
-output['folder']        = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/netcdf_latlon/03min/"
+output['folder']        = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/netcdf_lonlat/2.5min/"
 output['variable_name'] = varDict.netcdf_short_name[efas_variable_name] 
 output['file_name']     = output['variable_name']+"_efas_rhine-meuse"+".nc"
 output['unit']          = varDict.netcdf_unit[efas_variable_name]
