@@ -41,8 +41,8 @@ class OutputNetcdf():
         y_min = np.round(y_max - rows*deltaLat, 2) 
         
         # cell centres coordinates
-        self.longitudes = np.linspace(x_min + deltaLon/2., x_max - deltaLon/2., cols + 1)
-        self.latitudes  = np.linspace(y_max - deltaLat/2., y_min + deltaLat/2., rows + 1)
+        self.longitudes = np.linspace(x_min + deltaLon/2., x_max - deltaLon/2., cols)
+        self.latitudes  = np.linspace(y_max - deltaLat/2., y_min + deltaLat/2., rows)
         
         print self.longitudes
         
