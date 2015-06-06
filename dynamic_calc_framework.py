@@ -83,8 +83,8 @@ class CalcFramework(DynamicModel):
                                                  outputEPSG = self.outputEPSG,\
                                                  method = self.resample_method)
         else:
-            min_map_file_name = pcr.framework.frameworkBase.generateNameT("tn", self.modelTime.timeStepPCR)
-            max_map_file_name = pcr.framework.frameworkBase.generateNameT("tx", self.modelTime.timeStepPCR)
+            min_map_file_name = pcr.framework.frameworkBase.generateNameT(self.pcraster_files['directory']+"/tn", self.modelTime.timeStepPCR)
+            max_map_file_name = pcr.framework.frameworkBase.generateNameT(self.pcraster_files['directory']+"/tx", self.modelTime.timeStepPCR)
             min_map_values = vos.readPCRmapClone(v = min_map_file_name,\
                                                  cloneMapFileName = self.cloneMapFileName,\
                                                  tmpDir = self.tmpDir,\
