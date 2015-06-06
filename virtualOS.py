@@ -50,7 +50,7 @@ def initialize_logging(log_file_location, log_file_front_name = "log", debug_mod
     # order: DEBUG, INFO, WARNING, ERROR, CRITICAL
     
     # log level for debug mode:
-    if self.debug_mode == True: 
+    if debug_mode == True: 
         log_level_console = "DEBUG"
         log_level_file    = "DEBUG"
     
