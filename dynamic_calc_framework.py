@@ -19,7 +19,7 @@ class CalcFramework(DynamicModel):
     def __init__(self, cloneMapFileName,\
                        pcraster_files, \
                        modelTime, \
-                       output, inputEPSG = None, outputEPSG = None):
+                       output, inputEPSG = None, outputEPSG = None, resample_method = None):
         DynamicModel.__init__(self)
         
         # set the clone map
@@ -33,9 +33,10 @@ class CalcFramework(DynamicModel):
         self.output = output
         self.output['file_name'] = vos.getFullPath(self.output['file_name'], self.output['folder'])
         
-        # input and output projection/ccordinate systems 
+        # input and output projection/coordinate systems 
         self.inputEPSG  =  inputEPSG
         self.outputEPSG = outputEPSG
+        self.resample_method = resample_method
 
         # prepare temporary directory
         self.tmpDir = output['folder']+"/tmp/"
@@ -80,7 +81,7 @@ class CalcFramework(DynamicModel):
                                                  isNomMap = False,\
                                                  inputEPSG = self.inputEPSG,\
                                                  outputEPSG = self.outputEPSG,\
-                                                 method = " near")
+                                                 method = self.resample_method)
         else:
             min_map_file_name = pcr.framework.frameworkBase.generateNameT("tn", self.modelTime.timeStepPCR)
             max_map_file_name = pcr.framework.frameworkBase.generateNameT("tx", self.modelTime.timeStepPCR)
@@ -92,7 +93,7 @@ class CalcFramework(DynamicModel):
                                                  isNomMap = False,\
                                                  inputEPSG = self.inputEPSG,\
                                                  outputEPSG = self.outputEPSG,\
-                                                 method = " near")
+                                                 method = self.resample_method)
             max_map_values = vos.readPCRmapClone(v = max_map_file_name,\
                                                  cloneMapFileName = self.cloneMapFileName,\
                                                  tmpDir = self.tmpDir,\
@@ -101,7 +102,7 @@ class CalcFramework(DynamicModel):
                                                  isNomMap = False,\
                                                  inputEPSG = self.inputEPSG,\
                                                  outputEPSG = self.outputEPSG,\
-                                                 method = " near")
+                                                 method = self.resample_method)
             pcr_map_values = 0.50*(min_map_values + \
                                    max_map_values)
 

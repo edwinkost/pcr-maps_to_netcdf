@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 
 ###########################################################################################################
 
+# efas_variable_code in a list
+efas_variable_name = ["pd","pr","rg","ta","ws"]
+
 # obtain efas_variable_code from the system argurment
 efas_variable_name = sys.argv[1]
 
@@ -65,6 +68,7 @@ nrOfTimeSteps = 9070         # based on the last file provided by Ad
 # projection/coordinate sy
 inputEPSG  = "EPSG:3035" 
 outputEPSG = "EPSG:4326"
+resample_method = "average"
 
 ###########################################################################################################
 
@@ -85,7 +89,7 @@ def main():
     calculationModel = CalcFramework(cloneMapFileName,\
                                      pcraster_files, \
                                      modelTime, \
-                                     output, inputEPSG, outputEPSG)
+                                     output, inputEPSG, outputEPSG, resample_method)
 
     dynamic_framework = DynamicFramework(calculationModel,modelTime.nrOfTimeSteps)
     dynamic_framework.setQuiet(True)
