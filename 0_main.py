@@ -54,6 +54,9 @@ output['unit']          = varDict.netcdf_unit[efas_variable_name]
 output['long_name']     = varDict.netcdf_long_name[efas_variable_name] 
 output['description']   = varDict.description[efas_variable_name]      
 
+# put output at different folder
+output['folder'] += output['variable_name']+"/"
+
 # prepare the output directory
 try:
     os.makedirs(output['folder'])
