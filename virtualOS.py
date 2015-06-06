@@ -617,15 +617,15 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False,i
          ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
            str(tmpDir)+'tmp_inp.tif '+ \
            str(tmpDir)+'tmp_out.tif'
-    if inputEPSG != "default" or outputEPSG != "default" or method != "default":
-    co = 'gdalwarp '+\
-         '-s_srs '+inputEPSG+" "+\
-         '-t_srs '+outputEPSG+" "+\
-         te+tr+" "+\ 
-         '-r '+method+\
-         ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
-           str(tmpDir)+'tmp_inp.tif '+ \
-           str(tmpDir)+'tmp_out.tif'
+    if inputEPSG != "default" or outputEPSG != "default" or method != "default":\
+       co = 'gdalwarp '+\
+            '-s_srs '+inputEPSG+" "+\
+            '-t_srs '+outputEPSG+" "+\
+            te+tr+" "+\ 
+            '-r '+method+\
+            ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
+              str(tmpDir)+'tmp_inp.tif '+ \
+              str(tmpDir)+'tmp_out.tif'
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     co = 'gdal_translate -of PCRaster '+ \
