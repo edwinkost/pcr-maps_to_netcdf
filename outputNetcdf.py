@@ -42,7 +42,7 @@ class OutputNetcdf():
         
         # cell centres coordinates
         self.longitudes = np.linspace(x_min + deltaLon, x_max - deltaLon, cols + 1)
-        self.latitudes= = np.linspace(y_max - deltaLat, y_min + deltaLat, rows + 1)
+        self.latitudes  = np.linspace(y_max - deltaLat, y_min + deltaLat, rows + 1)
         
         # netCDF format and attributes:
         important_information = "This dataset is resampled to "+str(cellSizeInArcMin)+" arc minute resolution. "
