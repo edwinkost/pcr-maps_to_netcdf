@@ -621,7 +621,7 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False,i
        co = 'gdalwarp '+\
             '-s_srs '+inputEPSG+" "+\
             '-t_srs '+outputEPSG+" "+\
-            te+tr+" "+\ 
+            te+tr+" "+\
             '-r '+method+\
             ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
             str(tmpDir)+'tmp_inp.tif '+ \
