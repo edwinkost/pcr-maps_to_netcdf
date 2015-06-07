@@ -106,6 +106,10 @@ class CalcFramework(DynamicModel):
             pcr_map_values = 0.50*(min_map_values + \
                                    max_map_values)
 
+        
+        # for precipitation, converting the unit from mm.day-1 to m.day-1
+        if self.output['variable_name'] == "precipitation": pcr_map_values *= 0.001
+        
         # reporting
         timeStamp = datetime.datetime(self.modelTime.year,\
                                       self.modelTime.month,\
