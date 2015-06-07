@@ -38,7 +38,7 @@ efas_variable_name = ["pd","pr","rg","ta","ws"]
 try:
    efas_variable_name = sys.argv[1]
 except:
-
+   pass
 
 # file name of the clone map defining the scope of output
 cloneMapFileName = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/clone_maps/RhineMeuse2.5min.clone.map"
