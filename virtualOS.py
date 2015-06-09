@@ -598,7 +598,7 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False,i
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     # converting files to tif:
-    co = 'gdal_translate -ot Float32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
+    co = 'gdal_translate -ot Float32 -a_nodata none '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
     if isLddMap == True: co = 'gdal_translate -ot Int32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
     if isNominalMap == True: co = 'gdal_translate -ot Int32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
