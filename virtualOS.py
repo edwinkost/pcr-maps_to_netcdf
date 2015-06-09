@@ -598,11 +598,12 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False,i
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     # converting files to tif:
-    co = 'gdal_translate -ot Float32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
+    co = 'gdal_translate -ot Float32 -a_nodata -3.4028234663852886e+38 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
     if isLddMap == True: co = 'gdal_translate -ot Int32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
     if isNominalMap == True: co = 'gdal_translate -ot Int32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
     
-    print co
+    msg = "Execute from the command line:\n\n"+co+"\n\n"
+    logger.debug(msg)     
     
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
@@ -633,9 +634,12 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False,i
         logger.debug(msg)     
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
-    co = 'gdal_translate -of PCRaster -a_nodata -3.4028234663852886e+38'+ \
+    co = 'gdal_translate -of PCRaster -a_nodata -3.4028234663852886e+38 '+ \
               str(tmpDir)+'tmp_out.tif '+str(output)
-    print co
+
+    msg = "Execute from the command line:\n\n"+co+"\n\n"
+    logger.debug(msg)     
+
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     co = 'mapattr -c '+str(cloneOut)+' '+str(output)
