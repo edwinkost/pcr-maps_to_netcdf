@@ -77,7 +77,7 @@ class CalcFramework(DynamicModel):
                                                  cloneMapFileName = self.cloneMapFileName,\
                                                  tmpDir = self.tmpDir,\
                                                  absolutePath = None, isLddMap = False,\
-                                                 cover = 0.0,\
+                                                 cover = None,\
                                                  isNomMap = False,\
                                                  inputEPSG = self.inputEPSG,\
                                                  outputEPSG = self.outputEPSG,\
@@ -89,7 +89,7 @@ class CalcFramework(DynamicModel):
                                                  cloneMapFileName = self.cloneMapFileName,\
                                                  tmpDir = self.tmpDir,\
                                                  absolutePath = None, isLddMap = False,\
-                                                 cover = 0.0,\
+                                                 cover = None,\
                                                  isNomMap = False,\
                                                  inputEPSG = self.inputEPSG,\
                                                  outputEPSG = self.outputEPSG,\
@@ -98,7 +98,7 @@ class CalcFramework(DynamicModel):
                                                  cloneMapFileName = self.cloneMapFileName,\
                                                  tmpDir = self.tmpDir,\
                                                  absolutePath = None, isLddMap = False,\
-                                                 cover = 0.0,\
+                                                 cover = None,\
                                                  isNomMap = False,\
                                                  inputEPSG = self.inputEPSG,\
                                                  outputEPSG = self.outputEPSG,\

@@ -10,7 +10,7 @@ description       = {}
 # pr Daily precipitation (mm) between 6 UTC on the day specified and 6 UTC on the next day 
 efas_variable_name = "pr"
 netcdf_short_name[efas_variable_name] = 'precipitation'
-netcdf_unit[efas_variable_name]       = 'm.day-1'
+netcdf_unit[efas_variable_name]       = 'mm.day-1'
 netcdf_long_name[efas_variable_name]  = 'daily_precipitation'
 description[efas_variable_name]       = 'Daily precipitation between 6 UTC on the day specified and 6 UTC on the next day.'
 
@@ -56,3 +56,24 @@ netcdf_short_name[efas_variable_name] = 'calculated_radiation'
 netcdf_unit[efas_variable_name]       = 'KJ/m2/day'
 netcdf_long_name[efas_variable_name]  = 'calculated_radiation'
 description[efas_variable_name]       = 'Calculated radiation (KJ/m2/day), see the reference about its method.'
+
+# e0 Penman potential evaporation from a free water surface (mm/day) 
+efas_variable_name = "e0"
+netcdf_short_name[efas_variable_name] = 'water_potential_evaporation'
+netcdf_unit[efas_variable_name]       = 'mm.day-1'
+netcdf_long_name[efas_variable_name]  = 'potential_evaporation_from_a_free_water_surface'
+description[efas_variable_name]       = 'Penman potential evaporation from a free water surface (mm/day).'
+
+# et Penman potential transpiration from a crop canopy (mm/day) 
+efas_variable_name = "et"
+netcdf_short_name[efas_variable_name] = 'crop_potential_transpiration'
+netcdf_unit[efas_variable_name]       = 'mm.day-1'
+netcdf_long_name[efas_variable_name]  = 'potential_transpiration_from_a_crop_canopy'
+description[efas_variable_name]       = 'Penman potential transpiration from a crop canopy (mm/day).'
+
+# es Penman potential evaporation from a moist bare soil surface (mm/day)
+efas_variable_name = "es"
+netcdf_short_name[efas_variable_name] = 'bare_soil_potential_evaporation'
+netcdf_unit[efas_variable_name]       = 'mm.day-1'
+netcdf_long_name[efas_variable_name]  = 'potential_evaporation_from_a_moist_bare_soil_surface'
+description[efas_variable_name]       = 'Penman potential evaporation from a moist bare soil surface (mm/day).'

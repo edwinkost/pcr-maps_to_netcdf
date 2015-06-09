@@ -23,7 +23,7 @@ from currTimeStep import ModelTime
 import virtualOS as vos
 
 # variable dictionaries:
-import efas_variable_list as varDict
+import efas_variable_list_final as varDict
 
 import logging
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ except:
    pass
 
 # file name of the clone map defining the scope of output
-cloneMapFileName = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/clone_maps/RhineMeuse3min.clone.map"
+cloneMapFileName = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/clone_maps/RhineMeuse2.5min.clone.map"
 
 # directory where the original pcraster files are stored
 pcraster_files = {}
@@ -50,7 +50,8 @@ pcraster_files['file_name'] = efas_variable_name # "pr"
 
 # output folder
 output = {}
-output['folder']        = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/netcdf_latlon/3min/"
+#~ output['folder']        = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/netcdf_latlon/2.5min/"
+output['folder']        = "/scratch/edwin/input/forcing/hyperhydro_wg1/EFAS/netcdf_latlon_test/2.5min/"
 output['variable_name'] = varDict.netcdf_short_name[efas_variable_name] 
 output['file_name']     = output['variable_name']+"_efas_rhine-meuse"+".nc"
 output['unit']          = varDict.netcdf_unit[efas_variable_name]
@@ -74,7 +75,7 @@ nrOfTimeSteps = 9070         # based on the last file provided by Ad
 # projection/coordinate sy
 inputEPSG  = "EPSG:3035" 
 outputEPSG = "EPSG:4326"
-resample_method = "average"
+resample_method = "near"
 
 ###########################################################################################################
 
