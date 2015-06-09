@@ -635,6 +635,7 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False,i
     # 
     co = 'gdal_translate -of PCRaster -a_nodata -3.4028234663852886e+38'+ \
               str(tmpDir)+'tmp_out.tif '+str(output)
+    print co
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
     co = 'mapattr -c '+str(cloneOut)+' '+str(output)
