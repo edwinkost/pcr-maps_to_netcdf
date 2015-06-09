@@ -614,7 +614,7 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False,i
     te = '-te '+str(xmin)+' '+str(ymin)+' '+str(xmax)+' '+str(ymax)+' '
     tr = '-tr '+str(xres)+' '+str(yres)+' '
     co = 'gdalwarp '+te+tr+ \
-         ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
+         ' -srcnodata -3.4028234663852886e+38 -dstnodata -3.4028234663852886e+38 '+ \
            str(tmpDir)+'tmp_inp.tif '+ \
            str(tmpDir)+'tmp_out.tif'
     if inputEPSG != "default" or outputEPSG != "default" or method != "default":
@@ -623,14 +623,14 @@ def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False,i
              '-t_srs '+outputEPSG+" "+\
              te+tr+" "+\
              '-r '+method+\
-             ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
+             ' -srcnodata -3.4028234663852886e+38 -dstnodata -3.4028234663852886e+38 '+ \
              str(tmpDir)+'tmp_inp.tif '+ \
              str(tmpDir)+'tmp_out.tif'
         msg = "Execute from the command line:\n\n"+co+"\n\n"
         logger.debug(msg)     
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
-    co = 'gdal_translate -of PCRaster '+ \
+    co = 'gdal_translate -of PCRaster -a_nodata -3.4028234663852886e+38'+ \
               str(tmpDir)+'tmp_out.tif '+str(output)
     cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
     # 
